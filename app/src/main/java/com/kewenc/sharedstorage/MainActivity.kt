@@ -1,21 +1,28 @@
 package com.kewenc.sharedstorage
 
 import android.app.Activity
+import android.app.RecoverableSecurityException
+import android.content.ContentUris
+import android.content.ContentValues
+import android.content.Context
 import android.content.Intent
+import android.content.IntentSender.SendIntentException
 import android.database.Cursor
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment.DIRECTORY_PICTURES
 import android.os.ParcelFileDescriptor
+import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
 import android.view.View
+import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.*
+
 
 /**
  * https://developer.android.com/guide/topics/providers/document-provider#kotlin
@@ -29,7 +36,117 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
         private const val READ_REQUEST_CODE: Int = 42
         private const val WRITE_REQUEST_CODE: Int = 43
         private const val EDIT_REQUEST_CODE: Int = 44
-    }
+        private const val DELETE_REQUEST_CODE: Int = 45
+
+
+//        /**
+//         * Cursor查询时过滤字符串
+//         * @return
+//         */
+//        fun cursorAppendForFilterSong(hasAnd: Boolean): String? {
+//            val second: Int = CooApplication.getInstance().filterDuration
+//            val secondLong = second * 1000.toLong()
+//            val cursorAppendForFilterSong: String
+//            cursorAppendForFilterSong = if (hasAnd) {
+//                " AND " + MediaStore.Audio.Media.DURATION + " >= " + secondLong
+//            } else {
+//                MediaStore.Audio.Media.DURATION + " >= " + secondLong
+//            }
+//            //LogUtils.d("测试","SongsFilterUtils#cursorAppendForFilterSong"+" 过滤字符串为："+cursorAppendForFilterSong);
+//            return cursorAppendForFilterSong
+//        }
+
+        private var mCursorCols = arrayOf(
+            MediaStore.Audio.Media._ID,
+            MediaStore.Audio.Media.ALBUM_ID,
+            MediaStore.Audio.Media.ARTIST_ID,
+            MediaStore.Audio.Media.TITLE,
+            MediaStore.Audio.Media.ALBUM,
+            MediaStore.Audio.Media.ARTIST,
+            MediaStore.Audio.Media.DATA,
+            MediaStore.Audio.Media.DURATION,
+            MediaStore.Audio.Media.IS_PENDING
+        )
+
+
+        fun getAllSongsAndType(context: Context) {
+            val where = java.lang.StringBuilder()
+            where.append(MediaStore.Audio.Media.TITLE + " != ''")
+            where.append(" AND is_music = 1")
+//            where.append(MusicUtils.cursorAppendForFilterSong(true))
+//            LogUtils.d("", "##songSortOrder = $songSortOrder")
+            var sortStr = ""
+            sortStr = MediaStore.Audio.Media.ALBUM
+            var cursor: Cursor? = null
+            try {
+                cursor = context.contentResolver.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                    mCursorCols,
+                    where.toString(),
+                    null,
+                    sortStr
+                )
+            } catch (e: Throwable) {
+//                LogUtils.d("", "Error##" + e.message)
+            }
+            if (cursor == null) return
+            if (cursor != null && cursor.moveToFirst()) {
+                try {
+                    do {
+//                                cursor.getLong(0),  //id
+//                                cursor.getLong(1),  //albumId
+//                                cursor.getLong(2),  //artistId
+//                                cursor.getString(3),  //title
+//                                cursor.getString(4),  //album
+//                                cursor.getString(5),  //artist
+//                                cursor.getString(6),  //path
+//                                cursor.getInt(7) //duration
+                        Log.i("TAGF", "MusicLibraryUtils_id=" + cursor.getLong(0) + "_path=" + cursor.getString(6)+"_isPending=" + cursor.getString(7)
+                        )
+                    } while (cursor.moveToNext())
+                } catch (e: Throwable) {
+//                    LogUtils.d("", "Error##" + e.message)
+                } finally {
+                    cursor?.close()
+                }
+            }
+//            return arrayList
+        }
+
+        fun deleteMedia(context: Context, fileId: Long): Int {
+            var result: Int
+            val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, fileId)
+            Log.i("TAGF", "MusicLibraryUtils_deleteMedia_uri=$uri")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+
+                try {
+
+                    val values = ContentValues().apply {
+                        put(MediaStore.Audio.Media.IS_PENDING, 0)
+                    }
+                    context.contentResolver.update(uri, values, null, null)
+
+                    Log.i("TAGF", "update")
+
+                    result = context.contentResolver.delete(uri, null, null)
+                } catch (e: RecoverableSecurityException) {
+                    try {
+                        (context as MainActivity).startIntentSenderForResult(
+                            e.userAction.actionIntent.intentSender,
+                            DELETE_REQUEST_CODE, null, 0, 0, 0
+                        )
+                    } catch (e2: SendIntentException) {
+                        //                                        LogUtil.log("startIntentSender fail");
+                    }
+                }
+                result = -1
+            } else {
+                result = context.contentResolver.delete(uri, null, null)
+            }
+            return result
+        }
+
+        }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,6 +155,8 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
         btn2.setOnClickListener(this)
         btn3.setOnClickListener(this)
         btn4.setOnClickListener(this)
+        btn5.setOnClickListener(this)
+        btn6.setOnClickListener(this)
     }
 
     /**
@@ -45,6 +164,7 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
      */
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        Log.e("TAGF", "requestCode="+requestCode)
         if (requestCode == REQUEST_CODE_1) {
             var path = ""
             val uri = data?.data ?: return
@@ -95,6 +215,22 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
                 Log.i("TAGF", "编辑文档_Uri: $uri")
                 alterDocument(uri)
             }
+        }
+        if (requestCode == DELETE_REQUEST_CODE) {
+            Log.i("TAGF", "删除音乐")
+            data?.data?.also { uri ->
+                Log.i("TAGF", "删除音乐_Uri: $uri")
+            }
+
+            val values = ContentValues().apply {
+                put(MediaStore.Audio.Media.IS_PENDING, 0)
+            }
+            val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, edit.text.toString().toLong())
+
+            contentResolver.update(uri, values, null, null)
+            Log.i("TAGF", "删")
+            val result = contentResolver.delete(uri, null, null)
+            Log.i("TAGF", "删除音乐onActivityRe_uri="+uri+"_result="+result)
         }
     }
 
@@ -251,7 +387,7 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
             addCategory(Intent.CATEGORY_OPENABLE)
 
             // Filter to show only text files.
-            type = "text/plain"
+            type = "text/txt"
         }
 
         startActivityForResult(intent, EDIT_REQUEST_CODE)
@@ -299,6 +435,9 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
                 R.id.btn2 -> performFileSearch()
                 R.id.btn3 -> createFile("text/txt", "myTxt.txt")
                 R.id.btn4 -> editDocument()
+                R.id.btn5 -> getAllSongsAndType(this)
+                R.id.btn6 -> deleteMedia(this, edit.text.toString().toLong())
+                else -> Log.e("TAGF", "")
             }
         }
     }

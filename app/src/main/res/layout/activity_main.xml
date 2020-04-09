@@ -29,11 +29,30 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="创建文档"/>
+
             <Button
                 android:id="@+id/btn4"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="编辑文档"/>
+
+            <Button
+                android:id="@+id/btn5"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="搜索音乐"/>
+            <Button
+                android:id="@+id/btn6"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="删除音乐"/>
+
+            <EditText
+                android:id="@+id/edit"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"/>
+
+
             <ImageView
                 android:id="@+id/img"
                 android:layout_width="wrap_content"
