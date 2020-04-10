@@ -64,8 +64,8 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
             MediaStore.Audio.Media.ALBUM,
             MediaStore.Audio.Media.ARTIST,
             MediaStore.Audio.Media.DATA,
-            MediaStore.Audio.Media.DURATION,
-            MediaStore.Audio.Media.IS_PENDING
+            MediaStore.Audio.Media.DURATION
+//            MediaStore.Audio.Media.IS_PENDING
         )
 
 
@@ -100,8 +100,7 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
 //                                cursor.getString(5),  //artist
 //                                cursor.getString(6),  //path
 //                                cursor.getInt(7) //duration
-                        Log.i("TAGF", "MusicLibraryUtils_id=" + cursor.getLong(0) + "_path=" + cursor.getString(6)+"_isPending=" + cursor.getString(7)
-                        )
+                        Log.i("TAGF", "MusicLibraryUtils_id=" + cursor.getLong(0) + "_path=" + cursor.getString(6))
                     } while (cursor.moveToNext())
                 } catch (e: Throwable) {
 //                    LogUtils.d("", "Error##" + e.message)
@@ -112,28 +111,29 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
 //            return arrayList
         }
 
+
         fun deleteMedia(context: Context, fileId: Long): Int {
             var result: Int
             val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, fileId)
+
             Log.i("TAGF", "MusicLibraryUtils_deleteMedia_uri=$uri")
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
 
                 try {
 
-                    val values = ContentValues().apply {
-                        put(MediaStore.Audio.Media.IS_PENDING, 0)
-                    }
-                    context.contentResolver.update(uri, values, null, null)
+//                    val values = ContentValues().apply {
+//                        put(MediaStore.Audio.Media.IS_PENDING, 0)
+//                    }
+//                    context.contentResolver.update(uri, values, null, null)
 
-                    Log.i("TAGF", "update")
+//                    Log.i("TAGF", "update")
 
                     result = context.contentResolver.delete(uri, null, null)
                 } catch (e: RecoverableSecurityException) {
                     try {
                         (context as MainActivity).startIntentSenderForResult(
                             e.userAction.actionIntent.intentSender,
-                            DELETE_REQUEST_CODE, null, 0, 0, 0
-                        )
+                            DELETE_REQUEST_CODE, null, 0, 0, 0, null)
                     } catch (e2: SendIntentException) {
                         //                                        LogUtil.log("startIntentSender fail");
                     }
@@ -147,7 +147,7 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
 
         }
 
-
+//    MusicLibraryUtils_addMusicToPlay_musicID=55116_playListID=41481
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -157,6 +157,7 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
         btn4.setOnClickListener(this)
         btn5.setOnClickListener(this)
         btn6.setOnClickListener(this)
+        btn7.setOnClickListener(this)
     }
 
     /**
@@ -195,15 +196,18 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
             }
         }
         if (requestCode == READ_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-            // The document selected by the user won't be returned in the intent.
-            // Instead, a URI to that document will be contained in the return intent
-            // provided to this method as a parameter.
-            // Pull that URI using resultData.getData().
-            data?.data?.also { uri ->
-                Log.i("TAGF", "Uri: $uri")
-//                showImage(uri)
-                dumpImageMetaData(uri)
-            }
+//            // The document selected by the user won't be returned in the intent.
+//            // Instead, a URI to that document will be contained in the return intent
+//            // provided to this method as a parameter.
+//            // Pull that URI using resultData.getData().
+//            data?.data?.also { uri ->
+//                Log.i("TAGF", "Uri: $uri")
+////                showImage(uri)
+//                dumpImageMetaData(uri)
+//            }
+
+            Log.i("TAGF", "musicPlayList")
+            addMusicPlayList()
         }
         if (requestCode == WRITE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             data?.data?.also { uri ->
@@ -222,15 +226,19 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
                 Log.i("TAGF", "删除音乐_Uri: $uri")
             }
 
-            val values = ContentValues().apply {
-                put(MediaStore.Audio.Media.IS_PENDING, 0)
-            }
+//            val values = ContentValues().apply {
+//                put(MediaStore.Audio.Media.IS_PENDING, 0)
+//            }
             val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, edit.text.toString().toLong())
 
-            contentResolver.update(uri, values, null, null)
-            Log.i("TAGF", "删")
+//            contentResolver.update(uri, values, null, null)
+//            Log.i("TAGF", "删")
             val result = contentResolver.delete(uri, null, null)
             Log.i("TAGF", "删除音乐onActivityRe_uri="+uri+"_result="+result)
+        }
+        if (requestCode == 0x400) {
+            Log.i("TAGF", "on_addMusicPlayList")
+            addMusicPlayList()
         }
     }
 
@@ -267,8 +275,8 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
             // If one wanted to search for ogg vorbis files, the type would be "audio/ogg".
             // To search for all documents available via installed storage providers,
             // it would be "*/*".
-            type = "image/*"
-//                        type = "audio/*"
+//            type = "image/*"
+                        type = "audio/*"
         }
         startActivityForResult(intent, READ_REQUEST_CODE)
     }
@@ -437,8 +445,40 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
                 R.id.btn4 -> editDocument()
                 R.id.btn5 -> getAllSongsAndType(this)
                 R.id.btn6 -> deleteMedia(this, edit.text.toString().toLong())
+                R.id.btn7 -> addMusicPlayList()
                 else -> Log.e("TAGF", "")
             }
+        }
+    }
+
+    private fun addMusicPlayList(): Boolean {
+        var uri = MediaStore.Audio.Playlists.Members.getContentUri("external", 41481)
+        val v = ContentValues()
+        v.put("audio_id", 55116)
+        v.put("playlist_id", 41481)
+//        v.put("play_order", musicID)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            return try {
+                contentResolver.insert(uri, v) != null
+            } catch (e: RecoverableSecurityException) {
+                try {
+                    startIntentSenderForResult(
+                        e.userAction.actionIntent.intentSender,
+                        0x400,
+                        null,
+                        0,
+                        0,
+                        0,
+                        null
+                    )
+                } catch (ex: SendIntentException) {
+                    ex.printStackTrace()
+                }
+                false
+            }
+        } else {
+            return contentResolver.insert(uri, v) != null
         }
     }
 }

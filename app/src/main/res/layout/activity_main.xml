@@ -52,6 +52,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"/>
 
+            <Button
+                android:id="@+id/btn7"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="音乐添加列表"/>
 
             <ImageView
                 android:id="@+id/img"
