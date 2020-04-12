@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentSender.SendIntentException
 import android.database.Cursor
+import android.database.sqlite.SQLiteException
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -15,6 +16,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment.DIRECTORY_PICTURES
 import android.os.ParcelFileDescriptor
+import android.provider.BaseColumns
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
@@ -70,28 +72,57 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
 
 
         fun getAllSongsAndType(context: Context) {
-            val where = java.lang.StringBuilder()
-            where.append(MediaStore.Audio.Media.TITLE + " != ''")
-            where.append(" AND is_music = 1")
+            if (true) {//扫描图片
+//                val cursor: Cursor? = context.contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+//                    null,
+//                    MediaStore.Images.Media.MIME_TYPE + "=? or"
+//                + MediaStore.Images.Media.MIME_TYPE + "=?",
+//                    arrayOf("image/jpg", "image/png"), MediaStore.Images.Media.DATE_MODIFIED)
+
+                val cursor = context.contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                null, null,
+                    null, null)
+
+//                val cursor = context.contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+//                arrayOf(MediaStore.Images.Media._ID), MediaStore.Images.Media.DATA + "=? ",
+//                    arrayOf("image/jpg"), null)
+
+                if (cursor == null) return
+                while (cursor.moveToNext()) {
+                    val id = cursor.getLong(cursor.getColumnIndex(MediaStore.Images.Media._ID))
+                    val path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA))
+                    Log.e("TAGF", "图片id="+id+"_path=" + path)
+                    Log.i("TAGF", "uri="+ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id))
+//                    val path2  = MediaStore.Images.Media
+//                        .EXTERNAL_CONTENT_URI
+//                        .buildUpon()
+//                        .appendPath(id.toString()).build().toString()
+//                    Log.i("TAGF","path2="+path2)
+                }
+
+                cursor.close()
+            } else {//扫描歌曲
+                val where = java.lang.StringBuilder()
+                where.append(MediaStore.Audio.Media.TITLE + " != ''")
+                where.append(" AND is_music = 1")
 //            where.append(MusicUtils.cursorAppendForFilterSong(true))
 //            LogUtils.d("", "##songSortOrder = $songSortOrder")
-            var sortStr = ""
-            sortStr = MediaStore.Audio.Media.ALBUM
-            var cursor: Cursor? = null
-            try {
-                cursor = context.contentResolver.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                    mCursorCols,
-                    where.toString(),
-                    null,
-                    sortStr
-                )
-            } catch (e: Throwable) {
-//                LogUtils.d("", "Error##" + e.message)
-            }
-            if (cursor == null) return
-            if (cursor != null && cursor.moveToFirst()) {
+                var sortStr =  MediaStore.Audio.Media.ALBUM
+                var cursor: Cursor? = null
                 try {
-                    do {
+                    cursor = context.contentResolver.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                        mCursorCols,
+                        where.toString(),
+                        null,
+                        sortStr
+                    )
+                } catch (e: Throwable) {
+//                LogUtils.d("", "Error##" + e.message)
+                }
+                if (cursor == null) return
+                if (cursor != null && cursor.moveToFirst()) {
+                    try {
+                        do {
 //                                cursor.getLong(0),  //id
 //                                cursor.getLong(1),  //albumId
 //                                cursor.getLong(2),  //artistId
@@ -100,21 +131,23 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
 //                                cursor.getString(5),  //artist
 //                                cursor.getString(6),  //path
 //                                cursor.getInt(7) //duration
-                        Log.i("TAGF", "MusicLibraryUtils_id=" + cursor.getLong(0) + "_path=" + cursor.getString(6))
-                    } while (cursor.moveToNext())
-                } catch (e: Throwable) {
+                            Log.i("TAGF", "MusicLibraryUtils_id=" + cursor.getLong(0) + "_path=" + cursor.getString(6))
+                        } while (cursor.moveToNext())
+                    } catch (e: Throwable) {
 //                    LogUtils.d("", "Error##" + e.message)
-                } finally {
-                    cursor?.close()
+                    } finally {
+                        cursor?.close()
+                    }
                 }
-            }
 //            return arrayList
+            }
         }
 
 
         fun deleteMedia(context: Context, fileId: Long): Int {
             var result: Int
-            val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, fileId)
+//            val uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, fileId)
+            val uri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3Alingshi%2FmyPicture2.png")
 
             Log.i("TAGF", "MusicLibraryUtils_deleteMedia_uri=$uri")
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -128,6 +161,7 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
 
 //                    Log.i("TAGF", "update")
 
+                    MediaStore.setIncludePending(uri)
                     result = context.contentResolver.delete(uri, null, null)
                 } catch (e: RecoverableSecurityException) {
                     try {
@@ -158,6 +192,7 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
         btn5.setOnClickListener(this)
         btn6.setOnClickListener(this)
         btn7.setOnClickListener(this)
+        btn8.setOnClickListener(this)
     }
 
     /**
@@ -169,6 +204,7 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
         if (requestCode == REQUEST_CODE_1) {
             var path = ""
             val uri = data?.data ?: return
+            Log.e("TAGF", "onActivityResult_100="+uri)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val resolver = this.contentResolver
                 var file: File? = null
@@ -229,10 +265,14 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
 //            val values = ContentValues().apply {
 //                put(MediaStore.Audio.Media.IS_PENDING, 0)
 //            }
-            val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, edit.text.toString().toLong())
+//            val uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, edit.text.toString().toLong())
+            val uri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3Alingshi%2FmyPicture2.png")
 
 //            contentResolver.update(uri, values, null, null)
 //            Log.i("TAGF", "删")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                MediaStore.setIncludePending(uri)
+            }
             val result = contentResolver.delete(uri, null, null)
             Log.i("TAGF", "删除音乐onActivityRe_uri="+uri+"_result="+result)
         }
@@ -445,7 +485,8 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
                 R.id.btn4 -> editDocument()
                 R.id.btn5 -> getAllSongsAndType(this)
                 R.id.btn6 -> deleteMedia(this, edit.text.toString().toLong())
-                R.id.btn7 -> addMusicPlayList()
+                R.id.btn7 -> getPlayLists(this)
+                R.id.btn8 -> addMusicPlayList()
                 else -> Log.e("TAGF", "")
             }
         }
@@ -480,5 +521,33 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
         } else {
             return contentResolver.insert(uri, v) != null
         }
+    }
+
+
+    fun makePlaylistCursor(context: Context): Cursor? {
+        return try {
+            context.contentResolver.query(
+                MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, arrayOf(
+                    BaseColumns._ID,
+                    MediaStore.Audio.PlaylistsColumns.NAME
+                ), null, null, MediaStore.Audio.Playlists.DEFAULT_SORT_ORDER
+            )
+        } catch (e: SQLiteException) {
+            null
+        }
+    }
+
+    fun getPlayLists(context: Context) {
+        val mCursor = makePlaylistCursor(context)
+        Log.e("TAGF", "getPlayLists_mCursor="+(mCursor == null))
+        if (mCursor != null && mCursor.moveToFirst()) {
+            do {
+                val id = mCursor.getLong(0);
+                val name = mCursor.getString(1)
+//                val songCount = getSongCountForPlaylist(context, id);
+                Log.e("TAGF", "getPlayLists_id="+id+"_name="+name)
+            } while (mCursor.moveToNext());
+        }
+        mCursor?.close()
     }
 }
