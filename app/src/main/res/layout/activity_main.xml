@@ -64,6 +64,23 @@
                 android:layout_height="wrap_content"
                 android:text="音乐添加列表"/>
 
+            <Button
+                android:id="@+id/btn9"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="SAF删除文件"/>
+
+            <Button
+                android:id="@+id/btn10"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="SAF重命名文件"/>
+            <Button
+                android:id="@+id/btn11"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="SAF申请目录权限"/>
+
             <ImageView
                 android:id="@+id/img"
                 android:layout_width="wrap_content"

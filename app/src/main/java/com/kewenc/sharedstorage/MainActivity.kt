@@ -17,11 +17,13 @@ import android.os.Bundle
 import android.os.Environment.DIRECTORY_PICTURES
 import android.os.ParcelFileDescriptor
 import android.provider.BaseColumns
+import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.documentfile.provider.DocumentFile
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.*
 
@@ -39,6 +41,10 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
         private const val WRITE_REQUEST_CODE: Int = 43
         private const val EDIT_REQUEST_CODE: Int = 44
         private const val DELETE_REQUEST_CODE: Int = 45
+
+        private const val SAF_DELETE: Int = 46
+        private const val SAF_RENAME: Int = 47
+        private const val SAF_APPLY_PERMISSION: Int = 48
 
 
 //        /**
@@ -146,37 +152,40 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
 
         fun deleteMedia(context: Context, fileId: Long): Int {
             var result: Int
-//            val uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, fileId)
-            val uri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3Alingshi%2FmyPicture2.png")
+            val uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, fileId)
 
-            Log.i("TAGF", "MusicLibraryUtils_deleteMedia_uri=$uri")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val docUri = MediaStore.getDocumentUri(context, uri)
+            DocumentsContract.deleteDocument(context.contentResolver, docUri)
+            return 1
 
-                try {
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//                val docUri = MediaStore.getDocumentUri(context , uri)
+//                DocumentsContract.deleteDocument(context.contentResolver, docUri)
+//            }
 
-//                    val values = ContentValues().apply {
-//                        put(MediaStore.Audio.Media.IS_PENDING, 0)
+
+//            val uri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3Alingshi%2FmyPicture2.png")
+
+//            Log.i("TAGF", "MusicLibraryUtils_deleteMedia_uri=$uri")
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+//                try {
+//
+//                    MediaStore.setIncludePending(uri)
+//                    result = context.contentResolver.delete(uri, null, null)
+//                } catch (e: RecoverableSecurityException) {
+//                    try {
+//                        (context as MainActivity).startIntentSenderForResult(
+//                            e.userAction.actionIntent.intentSender,
+//                            DELETE_REQUEST_CODE, null, 0, 0, 0, null)
+//                    } catch (e2: SendIntentException) {
+//                        //                                        LogUtil.log("startIntentSender fail");
 //                    }
-//                    context.contentResolver.update(uri, values, null, null)
-
-//                    Log.i("TAGF", "update")
-
-                    MediaStore.setIncludePending(uri)
-                    result = context.contentResolver.delete(uri, null, null)
-                } catch (e: RecoverableSecurityException) {
-                    try {
-                        (context as MainActivity).startIntentSenderForResult(
-                            e.userAction.actionIntent.intentSender,
-                            DELETE_REQUEST_CODE, null, 0, 0, 0, null)
-                    } catch (e2: SendIntentException) {
-                        //                                        LogUtil.log("startIntentSender fail");
-                    }
-                }
-                result = -1
-            } else {
-                result = context.contentResolver.delete(uri, null, null)
-            }
-            return result
+//                }
+//                result = -1
+//            } else {
+//                result = context.contentResolver.delete(uri, null, null)
+//            }
+//            return result
         }
 
         }
@@ -193,6 +202,9 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
         btn6.setOnClickListener(this)
         btn7.setOnClickListener(this)
         btn8.setOnClickListener(this)
+        btn9.setOnClickListener(this)
+        btn10.setOnClickListener(this)
+        btn11.setOnClickListener(this)
     }
 
     /**
@@ -265,8 +277,8 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
 //            val values = ContentValues().apply {
 //                put(MediaStore.Audio.Media.IS_PENDING, 0)
 //            }
-//            val uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, edit.text.toString().toLong())
-            val uri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3Alingshi%2FmyPicture2.png")
+            val uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, edit.text.toString().toLong())
+//            val uri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3Alingshi%2FmyPicture2.png")
 
 //            contentResolver.update(uri, values, null, null)
 //            Log.i("TAGF", "删")
@@ -274,11 +286,56 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
                 MediaStore.setIncludePending(uri)
             }
             val result = contentResolver.delete(uri, null, null)
-            Log.i("TAGF", "删除音乐onActivityRe_uri="+uri+"_result="+result)
+
+//            val docUri = MediaStore.getDocumentUri(this, uri)
+//            DocumentsContract.deleteDocument(contentResolver, docUri)
+
+            Log.i("TAGF", "删除音乐onActivityRe_uri="+uri+"_result=")
         }
         if (requestCode == 0x400) {
             Log.i("TAGF", "on_addMusicPlayList")
             addMusicPlayList()
+        }
+        if (requestCode == SAF_DELETE) {
+            data?.data?.also { uri ->
+                Log.i("TAGF", "SAF删除音乐_Uri: $uri")
+                DocumentsContract.deleteDocument(contentResolver, uri)
+            }
+        }
+        if (requestCode == SAF_RENAME) {
+            data?.data?.also { uri ->
+                Log.i("TAGF", "SAF重命名音乐_Uri: $uri")
+                DocumentsContract.renameDocument(contentResolver, uri, "newFileName.jpeg")
+            }
+        }
+        if (requestCode == SAF_APPLY_PERMISSION) {
+//            var uriTree = null
+            data?.data?.also { uriTree ->
+
+                //                val root = DocumentF
+
+                // create DocumentFile which represents the selected directory
+                val root  = DocumentFile.fromTreeUri(this, uriTree)
+                // list all sub dirs of root
+//                    DocumentFile[] files = root.listFiles()
+                // do anything you want with APIs provided by DocumentFile
+                // ...
+
+                for (DocumentFile file : documentFile.listFiles()) {
+                if (file.isFile() && "test.txt".equals(file.getName())) {
+                    boolean delete = file.delete();
+                    LogUtil.log("deleteFile: " + delete);
+                    break;
+                }
+            }
+
+
+                Log.i("TAGF", "SAF申请目录权限_Uri: $uriTree")
+                val uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, edit.text.toString().toLong())
+                val docUri = MediaStore.getDocumentUri(this, uri)
+                DocumentsContract.deleteDocument(contentResolver, docUri)
+            }
+
         }
     }
 
@@ -487,9 +544,33 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
                 R.id.btn6 -> deleteMedia(this, edit.text.toString().toLong())
                 R.id.btn7 -> getPlayLists(this)
                 R.id.btn8 -> addMusicPlayList()
+                R.id.btn9 -> SafDelete()
+                R.id.btn10 -> SafRename()
+                R.id.btn11 -> SafApplyPermission()
                 else -> Log.e("TAGF", "")
             }
         }
+    }
+
+    private fun SafApplyPermission() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+        startActivityForResult(intent, SAF_APPLY_PERMISSION)
+    }
+
+    private fun SafRename() {
+        val intent = Intent()
+        intent.action = Intent.ACTION_OPEN_DOCUMENT
+//        intent.data = Uri.parse("content://media/external/images/media/53")
+        intent.type = "image/jpeg"
+        startActivityForResult(intent, SAF_RENAME)
+    }
+
+    private fun SafDelete() {
+        val intent = Intent()
+        intent.action = Intent.ACTION_OPEN_DOCUMENT
+//        intent.data = Uri.parse("content://media/external/images/media/53")
+        intent.type = "image/jpeg"
+        startActivityForResult(intent, SAF_DELETE)
     }
 
     private fun addMusicPlayList(): Boolean {
