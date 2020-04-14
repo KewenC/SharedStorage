@@ -16,6 +16,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment.DIRECTORY_PICTURES
 import android.os.ParcelFileDescriptor
+import android.os.storage.StorageManager
 import android.provider.BaseColumns
 import android.provider.DocumentsContract
 import android.provider.MediaStore
@@ -310,30 +311,49 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
         }
         if (requestCode == SAF_APPLY_PERMISSION) {
 //            var uriTree = null
+            data?.flags
             data?.data?.also { uriTree ->
 
-                //                val root = DocumentF
+                val takeFlags = data.flags.and(
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION.or(Intent.FLAG_GRANT_WRITE_URI_PERMISSION))
+                contentResolver.takePersistableUriPermission(uriTree, takeFlags)
 
                 // create DocumentFile which represents the selected directory
-                val root  = DocumentFile.fromTreeUri(this, uriTree)
+//                val root  = DocumentFile.fromTreeUri(this, uriTree)
                 // list all sub dirs of root
 //                    DocumentFile[] files = root.listFiles()
                 // do anything you want with APIs provided by DocumentFile
                 // ...
+//
+//                for (DocumentFile file : documentFile.listFiles()) {
+//                if (file.isFile() && "test.txt".equals(file.getName())) {
+//                    boolean delete = file.delete();
+//                    LogUtil.log("deleteFile: " + delete);
+//                    break;
+//                }
+//            }
 
-                for (DocumentFile file : documentFile.listFiles()) {
-                if (file.isFile() && "test.txt".equals(file.getName())) {
-                    boolean delete = file.delete();
-                    LogUtil.log("deleteFile: " + delete);
-                    break;
-                }
-            }
+//                DocumentFile root = DocumentFile.fromTreeUri(this,path);
+//                //在根目录下，查找名为handleCreateDocument的子目录
+//                DocumentFile dpath = root.findFile("handleCreateDocument");
+//                //如果该子目录不存在，则创建
+//                if(dpath==null) {
+//                    dpath = root.createDirectory("handleCreateDocument");
+//                }
+//                //在handleCreateDocument子目录下，创建一个text类型的Document文件
+//                DocumentFile dfile = dpath.createFile("text/*",name);
+//                //获取该Document的输入流，并写入数据
+//                os = getContentResolver().openOutputStream(dfile.getUri());
+//                ————————————————
+//                版权声明：本文为CSDN博主「喵咪星球长」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
+//                原文链接：https://blog.csdn.net/hyc1988107/article/details/83825237
 
 
                 Log.i("TAGF", "SAF申请目录权限_Uri: $uriTree")
                 val uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, edit.text.toString().toLong())
                 val docUri = MediaStore.getDocumentUri(this, uri)
-                DocumentsContract.deleteDocument(contentResolver, docUri)
+//                DocumentsContract.deleteDocument(contentResolver, docUri)
+                DocumentsContract.renameDocument(contentResolver, docUri, "aa.jpeg")
             }
 
         }
@@ -553,8 +573,12 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
     }
 
     private fun SafApplyPermission() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-        startActivityForResult(intent, SAF_APPLY_PERMISSION)
+//        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+//        startActivityForResult(intent, SAF_APPLY_PERMISSION)
+        val storageManager = getSystemService(StorageManager::class.java)
+        val storageVolume = storageManager.primaryStorageVolume
+//        val storageVolume = storageManager.get
+        startActivityForResult(storageVolume.createOpenDocumentTreeIntent(), SAF_APPLY_PERMISSION)
     }
 
     private fun SafRename() {
