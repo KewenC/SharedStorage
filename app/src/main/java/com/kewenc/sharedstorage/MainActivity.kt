@@ -350,10 +350,17 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
 
 
                 Log.i("TAGF", "SAF申请目录权限_Uri: $uriTree")
+
+
                 val uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, edit.text.toString().toLong())
                 val docUri = MediaStore.getDocumentUri(this, uri)
-//                DocumentsContract.deleteDocument(contentResolver, docUri)
-                DocumentsContract.renameDocument(contentResolver, docUri, "aa.jpeg")
+                DocumentsContract.deleteDocument(contentResolver, docUri)
+
+                val uri2 = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, edit2.text.toString().toLong())
+                val docUri2 = MediaStore.getDocumentUri(this, uri2)
+                DocumentsContract.deleteDocument(contentResolver, docUri2)
+
+//                DocumentsContract.renameDocument(contentResolver, docUri, "aa.jpeg")
             }
 
         }
