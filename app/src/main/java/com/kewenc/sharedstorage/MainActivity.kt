@@ -24,7 +24,6 @@ import android.provider.OpenableColumns
 import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.documentfile.provider.DocumentFile
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.*
 
@@ -36,6 +35,7 @@ import java.io.*
 class MainActivity : AppCompatActivity() , View.OnClickListener {
 
     companion object {
+
         private const val REQUEST_CODE_1 = 100
         private const val CACHE_NAME = "/cache_image.png"
         private const val READ_REQUEST_CODE: Int = 42
@@ -46,6 +46,10 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
         private const val SAF_DELETE: Int = 46
         private const val SAF_RENAME: Int = 47
         private const val SAF_APPLY_PERMISSION: Int = 48
+
+        private const val AMEND_REQUEST_CODE: Int = 49
+
+
 
 
 //        /**
@@ -73,83 +77,107 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
             MediaStore.Audio.Media.ALBUM,
             MediaStore.Audio.Media.ARTIST,
             MediaStore.Audio.Media.DATA,
-            MediaStore.Audio.Media.DURATION
+            MediaStore.Audio.Media.DURATION,
+            MediaStore.Audio.Media.SIZE
 //            MediaStore.Audio.Media.IS_PENDING
         )
 
-
-        fun getAllSongsAndType(context: Context) {
-            if (true) {//扫描图片
-//                val cursor: Cursor? = context.contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-//                    null,
-//                    MediaStore.Images.Media.MIME_TYPE + "=? or"
-//                + MediaStore.Images.Media.MIME_TYPE + "=?",
-//                    arrayOf("image/jpg", "image/png"), MediaStore.Images.Media.DATE_MODIFIED)
-
-                val cursor = context.contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+        /**
+         * 扫描图片
+         */
+        fun scanPicture(context: Context) {
+            val cursor: Cursor? = context.contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                 null, null,
-                    null, null)
-
-//                val cursor = context.contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-//                arrayOf(MediaStore.Images.Media._ID), MediaStore.Images.Media.DATA + "=? ",
-//                    arrayOf("image/jpg"), null)
-
-                if (cursor == null) return
-                while (cursor.moveToNext()) {
-                    val id = cursor.getLong(cursor.getColumnIndex(MediaStore.Images.Media._ID))
-                    val path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA))
-                    Log.e("TAGF", "图片id="+id+"_path=" + path)
-                    Log.i("TAGF", "uri="+ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id))
-//                    val path2  = MediaStore.Images.Media
-//                        .EXTERNAL_CONTENT_URI
-//                        .buildUpon()
-//                        .appendPath(id.toString()).build().toString()
-//                    Log.i("TAGF","path2="+path2)
+                null, null)
+            cursor?.let {
+                while (it.moveToNext()) {
+                    val id = it.getLong(it.getColumnIndex(MediaStore.Images.Media._ID))
+                    val path = it.getString(it.getColumnIndex(MediaStore.Images.Media.DATA))
+                    Log.i("TAGF", "图片id="+id+"_path=" + path+"_uri"+ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id))
                 }
-
                 cursor.close()
-            } else {//扫描歌曲
-                val where = java.lang.StringBuilder()
-                where.append(MediaStore.Audio.Media.TITLE + " != ''")
-                where.append(" AND is_music = 1")
-//            where.append(MusicUtils.cursorAppendForFilterSong(true))
-//            LogUtils.d("", "##songSortOrder = $songSortOrder")
-                var sortStr =  MediaStore.Audio.Media.ALBUM
-                var cursor: Cursor? = null
-                try {
-                    cursor = context.contentResolver.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                        mCursorCols,
-                        where.toString(),
-                        null,
-                        sortStr
-                    )
-                } catch (e: Throwable) {
-//                LogUtils.d("", "Error##" + e.message)
-                }
-                if (cursor == null) return
-                if (cursor != null && cursor.moveToFirst()) {
-                    try {
-                        do {
-//                                cursor.getLong(0),  //id
-//                                cursor.getLong(1),  //albumId
-//                                cursor.getLong(2),  //artistId
-//                                cursor.getString(3),  //title
-//                                cursor.getString(4),  //album
-//                                cursor.getString(5),  //artist
-//                                cursor.getString(6),  //path
-//                                cursor.getInt(7) //duration
-                            Log.i("TAGF", "MusicLibraryUtils_id=" + cursor.getLong(0) + "_path=" + cursor.getString(6))
-                        } while (cursor.moveToNext())
-                    } catch (e: Throwable) {
-//                    LogUtils.d("", "Error##" + e.message)
-                    } finally {
-                        cursor?.close()
-                    }
-                }
-//            return arrayList
             }
         }
 
+        /**
+         * 扫描歌曲
+         */
+        fun scanMusic(context: Context) {
+            val where = java.lang.StringBuilder()
+            where.append(MediaStore.Audio.Media.TITLE + " != ''")
+            where.append(" AND is_music = 1")
+            val sortStr =  MediaStore.Audio.Media.ALBUM
+            val cursor: Cursor? = context.contentResolver.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                mCursorCols,
+                where.toString(),
+                null,
+                sortStr
+            )
+            cursor?.let {
+                if (cursor.moveToFirst()) {
+                    do {
+                        val id = cursor.getLong(cursor.getColumnIndex(mCursorCols[0]))  //id
+                        val albumId = cursor.getLong(cursor.getColumnIndex(mCursorCols[1]))  //albumId
+                        val artistId = cursor.getLong(cursor.getColumnIndex(mCursorCols[2]))  //artistId
+                        val title = cursor.getString(cursor.getColumnIndex(mCursorCols[3]))  //title
+                        val album = cursor.getString(cursor.getColumnIndex(mCursorCols[4]))  //album
+                        val artist = cursor.getString(cursor.getColumnIndex(mCursorCols[5]))  //artist
+                        val path = cursor.getString(cursor.getColumnIndex(mCursorCols[6]))  //path
+                        val duration = cursor.getInt(cursor.getColumnIndex(mCursorCols[7])) //duration
+                        val size = cursor.getInt(cursor.getColumnIndex(mCursorCols[8]))
+                        Log.i("TAGF", "scanMusic_id="
+                                + id +"_"
+                                + albumId +"_"
+                                + artistId +"_"
+                                + title +"_"
+                                + album +"_"
+                                + artist +"_"
+                                + path +"_"
+                                + duration +"_"
+                                + size+"字节")
+                    } while (cursor.moveToNext())
+                }
+            }
+        }
+
+        fun amendMedia(context: Context, fileId: Long) {
+            val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, fileId)
+            Log.i("TAGF", "uri=$uri")
+            val contentValues = ContentValues()
+            contentValues.put(MediaStore.Audio.Media.TITLE, "mTitle")
+            contentValues.put(MediaStore.Audio.Media.ALBUM, "mAlbum")
+            contentValues.put(MediaStore.Audio.Media.ARTIST, "mArtist")
+            contentValues.put(MediaStore.Audio.Media.IS_PENDING, 0)
+            var result: Int = -1
+            var resultPending: Int = -1
+//            var resultPendingLater: Int = -1
+            try {
+                val contentValuesPending = ContentValues()
+                contentValuesPending.put(MediaStore.Audio.Media.IS_PENDING, 1)
+                resultPending = context.contentResolver.update(uri, contentValuesPending,null, null)
+
+                result = context.contentResolver.update(uri, contentValues, null, null)
+
+//                contentValuesPending.clear()
+//                contentValuesPending.put(MediaStore.Audio.Media.IS_PENDING, 0)
+//                resultPendingLater = context.contentResolver.update(uri, contentValuesPending,null, null)
+            } catch (e: RecoverableSecurityException) {
+                Log.e("TAGF", "e:"+e.message.toString())
+                try {
+                    (context as MainActivity).startIntentSenderForResult(
+                        e.userAction.actionIntent.intentSender,
+                        AMEND_REQUEST_CODE, null, 0, 0, 0, null)
+                } catch (e2: SendIntentException) {
+                    Log.e("TAGF", "e2:"+e.message.toString())
+                }
+            }
+            Log.e("TAGF", "result=${result}_resultPending=${resultPending}")
+//            val result = context.contentResolver.update(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+//                contentValues,
+//                "_id=?",
+//                arrayOf(fileId.toString()))
+
+        }
 
         fun deleteMedia(context: Context, fileId: Long): Int {
             var result: Int
@@ -199,8 +227,10 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
         btn2.setOnClickListener(this)
         btn3.setOnClickListener(this)
         btn4.setOnClickListener(this)
+        btn41.setOnClickListener(this)
         btn5.setOnClickListener(this)
         btn6.setOnClickListener(this)
+        btn61.setOnClickListener(this)
         btn7.setOnClickListener(this)
         btn8.setOnClickListener(this)
         btn9.setOnClickListener(this)
@@ -351,6 +381,15 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
 
                 Log.i("TAGF", "SAF申请目录权限_Uri: $uriTree")
 
+//                val contentValues = ContentValues()
+//                contentValues.put(MediaStore.Audio.Media.TITLE, "mTitle")
+//                contentValues.put(MediaStore.Audio.Media.ALBUM, "mAlbum")
+//                contentValues.put(MediaStore.Audio.Media.ARTIST, "mArtist")
+//                val result = contentResolver.update(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+//                    contentValues,
+//                    "_id=?",
+//                    arrayOf(edit.text.toString().toLong().toString()))
+//                Log.e("TAGF", "result = $result")
 
                 val uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, edit.text.toString().toLong())
                 val docUri = MediaStore.getDocumentUri(this, uri)
@@ -363,6 +402,12 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
 //                DocumentsContract.renameDocument(contentResolver, docUri, "aa.jpeg")
             }
 
+        }
+        if (requestCode == AMEND_REQUEST_CODE) {
+            data?.data?.also { uri ->
+                Log.i("TAGF", "修改音乐_Uri: $uri")
+            }
+            amendMedia(this, edit.text.toString().toLong())
         }
     }
 
@@ -567,8 +612,10 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
                 R.id.btn2 -> performFileSearch()
                 R.id.btn3 -> createFile("text/txt", "myTxt.txt")
                 R.id.btn4 -> editDocument()
-                R.id.btn5 -> getAllSongsAndType(this)
+                R.id.btn41 -> scanPicture(this)
+                R.id.btn5 -> scanMusic(this)
                 R.id.btn6 -> deleteMedia(this, edit.text.toString().toLong())
+                R.id.btn61 -> amendMedia(this, edit.text.toString().toLong())
                 R.id.btn7 -> getPlayLists(this)
                 R.id.btn8 -> addMusicPlayList()
                 R.id.btn9 -> SafDelete()

@@ -37,6 +37,12 @@
                 android:text="编辑文档"/>
 
             <Button
+                android:id="@+id/btn41"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="搜索图片"/>
+
+            <Button
                 android:id="@+id/btn5"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -46,6 +52,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="删除音乐"/>
+
+            <Button
+                android:id="@+id/btn61"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="修改音乐"/>
 
             <EditText
                 android:id="@+id/edit"
