@@ -103,6 +103,7 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
          * 扫描歌曲
          */
         fun scanMusic(context: Context) {
+            Log.i("TAGF", "GGGGGGGGGGGGGGGGGG")
             val where = java.lang.StringBuilder()
             where.append(MediaStore.Audio.Media.TITLE + " != ''")
             where.append(" AND is_music = 1")
@@ -179,13 +180,35 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
 
         }
 
-        fun deleteMedia(context: Context, fileId: Long): Int {
-            var result: Int
-            val uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, fileId)
+        fun deleteMedia(context: Context, fileId: Long){
+            var result: Int = -1
+            var resultPending: Int = -1
+            val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, fileId)
+            Log.i("TAGF", "uri=$uri")
+            try {
+                val contentValuesPending = ContentValues()
+                contentValuesPending.put(MediaStore.Audio.Media.IS_PENDING, 1)
+                resultPending = context.contentResolver.update(uri, contentValuesPending,null, null)
 
-            val docUri = MediaStore.getDocumentUri(context, uri)
-            DocumentsContract.deleteDocument(context.contentResolver, docUri)
-            return 1
+                result = context.contentResolver.delete(uri, null, null)
+            } catch (e: RecoverableSecurityException) {
+                Log.e("TAGF", "e:"+e.message.toString())
+                try {
+                    (context as MainActivity).startIntentSenderForResult(
+                        e.userAction.actionIntent.intentSender,
+                        DELETE_REQUEST_CODE, null, 0, 0, 0, null)
+                } catch (e2: SendIntentException) {
+                    Log.e("TAGF", "e2:"+e.message.toString())
+                }
+            }
+
+            Log.e("TAGF", "result=${result}_resultPending=${resultPending}")
+
+//            var result: Int = -1
+//            val uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, fileId)
+//
+//            val docUri = MediaStore.getDocumentUri(context, uri)
+//            DocumentsContract.deleteDocument(context.contentResolver, docUri)
 
 //            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 //                val docUri = MediaStore.getDocumentUri(context , uri)
@@ -304,24 +327,25 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
             data?.data?.also { uri ->
                 Log.i("TAGF", "删除音乐_Uri: $uri")
             }
+            deleteMedia(this, edit.text.toString().toLong())
 
-//            val values = ContentValues().apply {
-//                put(MediaStore.Audio.Media.IS_PENDING, 0)
+////            val values = ContentValues().apply {
+////                put(MediaStore.Audio.Media.IS_PENDING, 0)
+////            }
+//            val uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, edit.text.toString().toLong())
+////            val uri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3Alingshi%2FmyPicture2.png")
+//
+////            contentResolver.update(uri, values, null, null)
+////            Log.i("TAGF", "删")
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+//                MediaStore.setIncludePending(uri)
 //            }
-            val uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, edit.text.toString().toLong())
-//            val uri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3Alingshi%2FmyPicture2.png")
-
-//            contentResolver.update(uri, values, null, null)
-//            Log.i("TAGF", "删")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                MediaStore.setIncludePending(uri)
-            }
-            val result = contentResolver.delete(uri, null, null)
-
-//            val docUri = MediaStore.getDocumentUri(this, uri)
-//            DocumentsContract.deleteDocument(contentResolver, docUri)
-
-            Log.i("TAGF", "删除音乐onActivityRe_uri="+uri+"_result=")
+//            val result = contentResolver.delete(uri, null, null)
+//
+////            val docUri = MediaStore.getDocumentUri(this, uri)
+////            DocumentsContract.deleteDocument(contentResolver, docUri)
+//
+//            Log.i("TAGF", "删除音乐onActivityRe_uri="+uri+"_result=")
         }
         if (requestCode == 0x400) {
             Log.i("TAGF", "on_addMusicPlayList")
