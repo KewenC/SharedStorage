@@ -37,4 +37,6 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 
     implementation 'androidx.documentfile:documentfile:1.0.1'
+
+    implementation 'com.orhanobut:logger:2.2.0'
 }

@@ -23,7 +23,10 @@ import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.orhanobut.logger.AndroidLogAdapter
+import com.orhanobut.logger.Logger
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.*
 
@@ -240,9 +243,9 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
 //            return result
         }
 
-        }
+    }
 
-//    MusicLibraryUtils_addMusicToPlay_musicID=55116_playListID=41481
+    //    MusicLibraryUtils_addMusicToPlay_musicID=55116_playListID=41481
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -259,6 +262,15 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
         btn9.setOnClickListener(this)
         btn10.setOnClickListener(this)
         btn11.setOnClickListener(this)
+        Logger.addLogAdapter(AndroidLogAdapter())
+        Logger.d("KewenC ")
+        Logger.e("KewenC ")
+        Logger.e("KewenC ", "HGHHG")
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        Logger.d(mCursorCols)
     }
 
     /**
@@ -469,7 +481,7 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
             // To search for all documents available via installed storage providers,
             // it would be "*/*".
 //            type = "image/*"
-                        type = "audio/*"
+            type = "audio/*"
         }
         startActivityForResult(intent, READ_REQUEST_CODE)
     }
