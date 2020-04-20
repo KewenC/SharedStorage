@@ -23,7 +23,6 @@ import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
 import android.view.View
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.orhanobut.logger.AndroidLogAdapter
 import com.orhanobut.logger.Logger
@@ -162,6 +161,11 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
 
                 result = context.contentResolver.update(uri, contentValues, null, null)
 
+                if (result == 1) {
+                    val isSucceed = isAmendSucceed(context, fileId)
+                    Log.i("TAGF", "判断是否修改成功=$isSucceed")
+                }
+
 //                contentValuesPending.clear()
 //                contentValuesPending.put(MediaStore.Audio.Media.IS_PENDING, 0)
 //                resultPendingLater = context.contentResolver.update(uri, contentValuesPending,null, null)
@@ -181,6 +185,125 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
 //                "_id=?",
 //                arrayOf(fileId.toString()))
 
+        }
+
+        private fun createMusic(context: Context, fileId: Long, displayName: String): Boolean {
+            val resolver = context.contentResolver
+//            val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, fileId)
+//            val musicPath = context.getExternalFilesDir(DIRECTORY_MUSIC)
+//            Log.i("TAGF", "musicPath="+musicPath+"_displayName="+displayName)
+//            resolver.openFileDescriptor(uri, "r").use { parcelFileDescriptor ->
+//                parcelFileDescriptor?.let {
+//                    val fileInputStream = FileInputStream(it.fileDescriptor)
+//
+//
+//
+//
+//                    val fileOutputStream = FileOutputStream("$musicPath/$displayName")
+//                    val buffer = ByteArray(1024 * 4)
+//                    var count = 0
+//                    while ({ count = fileInputStream.read(buffer);count }() > 0) {
+//                        fileOutputStream.write(buffer, 0, count)
+//                    }
+//                    fileOutputStream.flush()
+//                    fileInputStream.close()
+//                    fileInputStream.close()
+//                }
+//            }
+
+            val values = ContentValues().apply {
+                put(MediaStore.Audio.Media.DISPLAY_NAME, "陈科文.mp3")
+                put(MediaStore.Audio.Media.MIME_TYPE, "audio/${displayName.substring(displayName.lastIndexOf(".") + 1)}")
+
+//                put(MediaStore.Audio.Media.TITLE, "mTitle")
+//                put(MediaStore.Audio.Media.ALBUM, "mAlbum")
+//                put(MediaStore.Audio.Media.ARTIST, "mArtist")
+
+                put(MediaStore.Audio.Media.IS_PENDING, 1)
+            }
+            val collection = MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+            val item = resolver.insert(collection, values)
+            if (item != null) {
+                Log.e("TAGF", "item_uri=$item")
+                resolver.openFileDescriptor(item, "w", null).use { it ->
+                    //
+                    it?.let { des ->
+                        val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, fileId)
+//                    Log.i("TAGF", "musicPath="+musicPath+"_displayName="+displayName)
+                        resolver.openFileDescriptor(uri, "r").use { src ->
+                            src?.let {
+                                val fileInputStream = FileInputStream(src.fileDescriptor)
+                                val fileOutputStream = FileOutputStream(des.fileDescriptor)
+                                val buffer = ByteArray(1024 * 4)
+                                var count = 0
+                                while ({ count = fileInputStream.read(buffer);count }() > 0) {
+                                    fileOutputStream.write(buffer, 0, count)
+                                }
+                                fileOutputStream.flush()
+                                fileInputStream.close()
+                                fileInputStream.close()
+                            }
+                        }
+                    }
+                    //
+                }
+                values.clear()
+//                values.put(MediaStore.Audio.Media.DISPLAY_NAME, "陈科文2.mp3")
+                values.put(MediaStore.Audio.Media.TITLE, "mTitle")
+                values.put(MediaStore.Audio.Media.ALBUM, "mAlbum")
+                values.put(MediaStore.Audio.Media.ARTIST, "mArtist")
+                resolver.update(item, values, "_id=?", arrayOf(fileId.toString()))
+
+                values.clear()
+                values.put(MediaStore.Audio.Media.IS_PENDING, 0)
+                resolver.update(item, values, null, null)
+
+//                context.getSharedPreferences("MyPref",Context.MODE_PRIVATE);
+            }
+
+
+            return false
+        }
+
+        private fun isAmendSucceed(context: Context, fileId: Long): Boolean {
+            val cursor: Cursor? = context.contentResolver.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                arrayOf(MediaStore.Audio.Media.TITLE, MediaStore.Audio.Media.ALBUM, MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.DISPLAY_NAME),
+                "_id=?",
+                arrayOf(fileId.toString()),
+                null
+            )
+            var displayName: String = ""
+            cursor?.let {
+                if (cursor.moveToFirst()) {
+                    do {
+//                        val id = cursor.getLong(cursor.getColumnIndex(mCursorCols[0]))  //id
+//                        val albumId = cursor.getLong(cursor.getColumnIndex(mCursorCols[1]))  //albumId
+//                        val artistId = cursor.getLong(cursor.getColumnIndex(mCursorCols[2]))  //artistId
+                        val title = cursor.getString(cursor.getColumnIndex(mCursorCols[3]))  //title
+                        val album = cursor.getString(cursor.getColumnIndex(mCursorCols[4]))  //album
+                        val artist = cursor.getString(cursor.getColumnIndex(mCursorCols[5]))  //artist
+
+                        displayName = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME))
+//                        val path = cursor.getString(cursor.getColumnIndex(mCursorCols[6]))  //path
+//                        val duration = cursor.getInt(cursor.getColumnIndex(mCursorCols[7])) //duration
+//                        val size = cursor.getInt(cursor.getColumnIndex(mCursorCols[8]))
+                        Log.i("TAGF",
+                            title +"_"
+                                + album +"_"
+                                + artist +"_"
+                        + displayName)
+                        if (title == "mTitle" && album == "mAlbum" && artist == "mArtist") {
+                            return true
+                        }
+                    } while (cursor.moveToNext())
+                }
+            }
+
+            if (displayName == "") {
+                return false
+            } else {
+                return createMusic(context, fileId, displayName)
+            }
         }
 
         fun deleteMedia(context: Context, fileId: Long){
@@ -427,15 +550,17 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
 //                    arrayOf(edit.text.toString().toLong().toString()))
 //                Log.e("TAGF", "result = $result")
 
-                val uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, edit.text.toString().toLong())
-                val docUri = MediaStore.getDocumentUri(this, uri)
-                DocumentsContract.deleteDocument(contentResolver, docUri)
+                if (edit.text.toString() != "") {
+                    val uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, edit.text.toString().toLong())
+                    val docUri = MediaStore.getDocumentUri(this, uri)
+                    DocumentsContract.deleteDocument(contentResolver, docUri)
 
-                val uri2 = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, edit2.text.toString().toLong())
-                val docUri2 = MediaStore.getDocumentUri(this, uri2)
-                DocumentsContract.deleteDocument(contentResolver, docUri2)
+                    val uri2 = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, edit2.text.toString().toLong())
+                    val docUri2 = MediaStore.getDocumentUri(this, uri2)
+                    DocumentsContract.deleteDocument(contentResolver, docUri2)
 
 //                DocumentsContract.renameDocument(contentResolver, docUri, "aa.jpeg")
+                }
             }
 
         }
